@@ -22,10 +22,9 @@ void I2C_ENDING(void)
 {
 	SDA_OUT;
 	SCL_OUT;
-	SCL_0;
+	SCL_1;
 	SDA_0;
 	clock_delay_usec(5);
-	SCL_1;
 	SDA_1;
 	clock_delay_usec(5);
 }
@@ -36,20 +35,23 @@ void I2C_ENDING(void)
 unsigned char I2C_WAIT_ACK(void)
 {
 	unsigned int time_out = 0; 
-	SDA_OUT;
-	SCL_OUT;
-	SDA_1; clock_delay_usec(5);
-	SCL_1; clock_delay_usec(5);
+	//SDA_OUT;
+	//SCL_OUT;
+	//SDA_1; 
+	//clock_delay_usec(5);
+	//SCL_1; //clock_delay_usec(5);
 	SDA_IN;
 	while(SDA) {
 		time_out++;
-		if (time_out > 50) {
-			I2C_ENDING();
+		if (time_out > 5) {
+			printf("wait ack time out. \n\r");
+			//I2C_ENDING();
 			return 1;
 		}
 		clock_delay_usec(5);
 	}
-	SCL_0;
+	SCL_1;
+	return 0;
 }
 
 /*
@@ -91,17 +93,18 @@ void I2C_SEND_BYTE(unsigned char byte)
 	
 	SDA_OUT;
 	SCL_OUT;
-	SCL_0;
 	
 	for (i = 0; i < 8; i++) {
-		SDA = (byte & 0x80) >> 7;
-		byte <<= 1;
-		clock_delay_usec(5);
 		SCL_1;
 		clock_delay_usec(5);
+		SDA = (byte & 0x80) >> 7;
+		//SCL_0;
+		//clock_delay_usec(5);
+		byte <<= 1;
 		SCL_0;
 		clock_delay_usec(5);
 	}
+	SCL_0;
 }
 
 /*
@@ -114,13 +117,13 @@ unsigned char I2C_RECEIVE_BYTE(unsigned char ack)
 	SDA_IN;
 	SCL_OUT;
 	for(i = 0; i < 8; i++) {
-		SCL_0;
-		clock_delay_usec(5);
 		SCL_1;
+		clock_delay_usec(5);
 		recive <<= 1;
 		if(SDA) {
 			recive++;
 		}
+		SCL_0;
 		clock_delay_usec(5);
 	}
 	if(ack) {
@@ -138,14 +141,38 @@ unsigned char I2C_RECEIVE_BYTE(unsigned char ack)
 unsigned char I2C_WRITE_BYTE(unsigned char i2c_addr, unsigned char reg_addr, unsigned char date)
 {
 	unsigned char  count = 0;
-	I2C_STARTING();
-	I2C_SEND_BYTE(i2c_addr);
-	I2C_WAIT_ACK();
-	I2C_SEND_BYTE(reg_addr);
-	I2C_WAIT_ACK();
 	
-	I2C_SEND_BYTE(date);
-	I2C_WAIT_ACK();
+	I2C_STARTING();
+	do {
+		if (count > 0) {
+			printf("time out: %d\n\r", __LINE__);
+			return 1;
+		}
+		I2C_SEND_BYTE(i2c_addr);
+		count++;
+	} while(I2C_WAIT_ACK());
+	count = 0;
+
+	//I2C_STARTING();
+	do {
+		if (count > 0) {
+			printf("time out: %d\n\r", __LINE__);
+			return 1;
+		}
+		I2C_SEND_BYTE(reg_addr);
+		count++;
+	} while(I2C_WAIT_ACK());
+	count = 0;
+
+	//I2C_STARTING();
+	do {
+		if (count > 0) {
+			printf("time out: %d\n\r", __LINE__);
+			return 1;
+		}
+		I2C_SEND_BYTE(date);
+		count++;
+	} while(I2C_WAIT_ACK());
 	
 	I2C_ENDING();
 	
@@ -157,18 +184,43 @@ unsigned char I2C_WRITE_BYTE(unsigned char i2c_addr, unsigned char reg_addr, uns
 */
 unsigned char I2C_READ_BYTE(unsigned char i2c_addr, unsigned char reg_addr)
 {
-	unsigned char res = 0;
+	unsigned char count = 0;
+	unsigned char res;
 	I2C_STARTING();
-	
-	I2C_SEND_BYTE(i2c_addr);
-	res++;
-	I2C_WAIT_ACK();
+	do {
+		if (count > 0) {
+			printf("time out: %d\n\r", __LINE__);
+			return 1;
+		}
+		I2C_SEND_BYTE(i2c_addr);
+		count++;
+	} while(I2C_WAIT_ACK());
+	count = 0;
+
+	//I2C_STARTING();
+	do {
+		if (count > 0) {
+			printf("time out: %d\n\r", __LINE__);
+			return 1;
+		}
+		I2C_SEND_BYTE(reg_addr);
+		count++;
+	} while(I2C_WAIT_ACK());
+	count = 0;
+
 	I2C_STARTING();
-	I2C_SEND_BYTE(i2c_addr + 1);
-	res++;
-	I2C_WAIT_ACK();
+	do {
+		if (count > 0) {
+			printf("time out: %d\n\r", __LINE__);
+			return 1;
+		}
+		I2C_SEND_BYTE(i2c_addr + 1);
+		count++;
+	} while(I2C_WAIT_ACK());
+	count = 0;
+
 	res = I2C_RECEIVE_BYTE(0);
 	I2C_ENDING();
 	
-	return 0;
+	return res;
 }

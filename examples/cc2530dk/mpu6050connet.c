@@ -17,10 +17,10 @@ PROCESS_THREAD(get_mpu6050_val, ev, data)
 {
 	PROCESS_BEGIN();
 	printf("init\n");
-	mpu6050_init();
 	while(1) {
 		int i = 50000;
 		while(i--);
+		mpu6050_init();
 		printf("X轴加速度: %d\n\r", getdate(ACCEL_XOUT_H));	//显示X轴加速度
 		printf("Y轴加速度: %d\n\r", getdate(ACCEL_YOUT_H));	//显示Y轴加速度
 		printf("Z轴加速度: %d\n\r", getdate(ACCEL_ZOUT_H));	//显示Z轴加速度
