@@ -72,6 +72,15 @@ value(int type)
     command |= ADCCON3_ECH3 | ADCCON3_ECH2 | ADCCON3_ECH1 | ADCCON3_ECH0;
     break;
 #endif
+	case ADC_SENSOR_TYPE_AIN0:
+		command |= 0x00;
+	break;
+	case ADC_SENSOR_TYPE_AIN1:
+		command |= ADCCON3_ECH0;
+	break;
+	case ADC_SENSOR_TYPE_AIN6:
+		command |= ADCCON3_ECH2 | ADCCON3_ECH1;
+	break;
   default:
     /* If the sensor is not present or disabled in conf, return -1 */
     return -1;

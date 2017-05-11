@@ -179,6 +179,14 @@ PROCESS_THREAD(sensors_test_process, ev, data)
         /* Store rv temporarily in dec so we can use it for the battery */
         dec = rv;
       }
+	  P0DIR &= ~(0x40);
+	  rv = sensor->value(ADC_SENSOR_TYPE_AIN6);
+      if(rv != -1) {
+        PRINTF("湿度=%d\n\r", rv);
+        /* Store rv temporarily in dec so we can use it for the battery */
+        dec = rv;
+      }
+	  
       /*
        * Battery Voltage - ToDo
        *   rv = sensor->value(ADC_SENSOR_TYPE_BATTERY);

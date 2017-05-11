@@ -5,31 +5,24 @@
 
 #include <stdio.h>
 #include "contiki.h"
-#include "dev/ds18b20.h"
+#include "dev/dht11.h"
 
-PROCESS(get_ds18b20_val, "get ds18b20 value");
-AUTOSTART_PROCESSES(&get_ds18b20_val);
+PROCESS(get_dht11_val, "get dht11 value");
+AUTOSTART_PROCESSES(&get_dht11_val);
 
-
-unsigned char integer, decimal;
+unsigned char temp_integer = 0, humidity_integer = 0, temp_decimal = 0, humidity_decimal = 0;
 
 /*
 *	主进程
 */
-PROCESS_THREAD(get_ds18b20_val, ev, data)
+PROCESS_THREAD(get_dht11_val, ev, data)
 {
 	PROCESS_BEGIN();
 	
-	DS18B20_SendConvert();
 	while(1) {
-		DS18B20_SendConvert();
-		DS18B20_GetTem(&integer, &decimal);
-		printf("temp: %d.%d\n\r", integer, decimal);
-		
-		if (integer > 31) {
-			P2DIR |= 0x02;
-			P2_1 != P2_1;
-		}
+		printf("dht11_debug\n\r");
+		dht11_read(&temp_integer, &humidity_integer, &temp_decimal, &humidity_decimal);
+		printf("temp_integer = %d, humidity_integer = %d, temp_decimal = %d, humidity_decimal = %d\n\r",temp_integer, humidity_integer, temp_decimal, humidity_decimal);
 		clock_delay_usec(70000);
 		clock_delay_usec(70000);
 		clock_delay_usec(70000);

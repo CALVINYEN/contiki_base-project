@@ -30,6 +30,6 @@
 #define	WHO_AM_I			0x75	//IIC地址寄存器(默认数值0x68，只读)
 #define	SlaveAddress	0xD0	//IIC写入时的地址字节数据，+1为读取
 
-extern void mpu6050_init(void);
+extern unsigned char mpu6050_init(void);
 extern int getdate(unsigned char address);
 #endif

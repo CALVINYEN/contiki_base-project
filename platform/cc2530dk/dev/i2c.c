@@ -22,8 +22,8 @@ void I2C_ENDING(void)
 {
 	SDA_OUT;
 	SCL_OUT;
-	SCL_1;
 	SDA_0;
+	SCL_1;
 	clock_delay_usec(5);
 	SDA_1;
 	clock_delay_usec(5);
@@ -35,22 +35,23 @@ void I2C_ENDING(void)
 unsigned char I2C_WAIT_ACK(void)
 {
 	unsigned int time_out = 0; 
-	//SDA_OUT;
-	//SCL_OUT;
-	//SDA_1; 
+	SDA_OUT;
+	SCL_OUT;
+	SDA_1; 
 	//clock_delay_usec(5);
-	//SCL_1; //clock_delay_usec(5);
 	SDA_IN;
+	SCL_1;
+	clock_delay_usec(5);
 	while(SDA) {
 		time_out++;
-		if (time_out > 5) {
+		clock_delay_usec(1);
+		if (time_out > 50) {
 			printf("wait ack time out. \n\r");
-			//I2C_ENDING();
+			I2C_ENDING();
 			return 1;
 		}
-		clock_delay_usec(5);
 	}
-	SCL_1;
+	SCL_0;
 	return 0;
 }
 
@@ -63,10 +64,11 @@ void I2C_ACK(void)
 	SCL_OUT;
 	SCL_0;
 	SDA_0;
-	clock_delay_usec(5);
+	clock_delay_usec(2);
 	SCL_1;
 	clock_delay_usec(5);
 	SCL_0;
+	clock_delay_usec(5);
 }
 
 /*
@@ -78,148 +80,106 @@ void I2C_NACK(void)
 	SCL_OUT;
 	SCL_0;
 	SDA_1;
-	clock_delay_usec(5);
+	clock_delay_usec(2);
 	SCL_1;
 	clock_delay_usec(5);
 	SCL_0;
+	clock_delay_usec(5);
 }
 
 /*
-* 发送一个字节
+* 发送一个位
 */
-void I2C_SEND_BYTE(unsigned char byte)
+unsigned char I2C_SEND_BYTE(unsigned char byte)
 {
 	unsigned char i;
 	
 	SDA_OUT;
 	SCL_OUT;
-	
+	SCL_0;
 	for (i = 0; i < 8; i++) {
+		SDA = (byte & 0x80) >> 7;
+		byte <<= 1;
 		SCL_1;
 		clock_delay_usec(5);
-		SDA = (byte & 0x80) >> 7;
-		//SCL_0;
-		//clock_delay_usec(5);
-		byte <<= 1;
 		SCL_0;
 		clock_delay_usec(5);
 	}
-	SCL_0;
+	return I2C_WAIT_ACK();
 }
 
 /*
 * 接受一个字节
 */
-unsigned char I2C_RECEIVE_BYTE(unsigned char ack)
+void I2C_RECEIVE_BYTE(unsigned char *res)
 {
 	unsigned char i;
 	unsigned char recive = 0;
 	SDA_IN;
 	SCL_OUT;
 	for(i = 0; i < 8; i++) {
+		SCL_0;
+		clock_delay_usec(5);
 		SCL_1;
 		clock_delay_usec(5);
 		recive <<= 1;
 		if(SDA) {
 			recive++;
 		}
-		SCL_0;
-		clock_delay_usec(5);
 	}
-	if(ack) {
-		I2C_ACK();
-	}
-	else {
-		I2C_NACK();
-	}
-	return recive;
+	
+	*res = recive;
 }
 
 /*
 * 写入指定设备 指定寄存器一个字节
 */
-unsigned char I2C_WRITE_BYTE(unsigned char i2c_addr, unsigned char reg_addr, unsigned char date)
+unsigned char I2C_WRITE_BYTE(unsigned char i2c_addr, unsigned char reg_addr, unsigned char data)
 {
-	unsigned char  count = 0;
+	unsigned char  res;
 	
 	I2C_STARTING();
-	do {
-		if (count > 0) {
-			printf("time out: %d\n\r", __LINE__);
-			return 1;
-		}
-		I2C_SEND_BYTE(i2c_addr);
-		count++;
-	} while(I2C_WAIT_ACK());
-	count = 0;
-
-	//I2C_STARTING();
-	do {
-		if (count > 0) {
-			printf("time out: %d\n\r", __LINE__);
-			return 1;
-		}
-		I2C_SEND_BYTE(reg_addr);
-		count++;
-	} while(I2C_WAIT_ACK());
-	count = 0;
-
-	//I2C_STARTING();
-	do {
-		if (count > 0) {
-			printf("time out: %d\n\r", __LINE__);
-			return 1;
-		}
-		I2C_SEND_BYTE(date);
-		count++;
-	} while(I2C_WAIT_ACK());
 	
-	I2C_ENDING();
+	if((res = I2C_SEND_BYTE(i2c_addr))) {
+		return res;
+	}
 	
-	return 1;
+	if((res = I2C_SEND_BYTE(reg_addr))) {
+		return res;
+	}
+
+	if((res = I2C_SEND_BYTE(data))) {
+		return res;
+	}
+
+	return 0;
 }
 
 /*
 * 读取指定设备 指定寄存器的一个值。
 */
-unsigned char I2C_READ_BYTE(unsigned char i2c_addr, unsigned char reg_addr)
+unsigned char I2C_READ_BYTE(unsigned char i2c_addr, unsigned char reg_addr, unsigned char *data)
 {
-	unsigned char count = 0;
 	unsigned char res;
 	I2C_STARTING();
-	do {
-		if (count > 0) {
-			printf("time out: %d\n\r", __LINE__);
-			return 1;
-		}
-		I2C_SEND_BYTE(i2c_addr);
-		count++;
-	} while(I2C_WAIT_ACK());
-	count = 0;
+	
+	if((res = I2C_SEND_BYTE(i2c_addr))) {
+		return res;
+	}
 
-	//I2C_STARTING();
-	do {
-		if (count > 0) {
-			printf("time out: %d\n\r", __LINE__);
-			return 1;
-		}
-		I2C_SEND_BYTE(reg_addr);
-		count++;
-	} while(I2C_WAIT_ACK());
-	count = 0;
+	if((res = I2C_SEND_BYTE(reg_addr))) {
+		return res;
+	}
 
 	I2C_STARTING();
-	do {
-		if (count > 0) {
-			printf("time out: %d\n\r", __LINE__);
-			return 1;
-		}
-		I2C_SEND_BYTE(i2c_addr + 1);
-		count++;
-	} while(I2C_WAIT_ACK());
-	count = 0;
+	
+	if((res = I2C_SEND_BYTE(i2c_addr + 1))) {
+		return res;
+	}
 
-	res = I2C_RECEIVE_BYTE(0);
+	I2C_RECEIVE_BYTE(data);
+	
+	I2C_NACK();
 	I2C_ENDING();
 	
 	return res;
