@@ -1,186 +1,103 @@
+/*
+*	clavinyen 20170510
+*/
+
 #include "dev/i2c.h"
 
-/*
-* 开始信号
-*/
-void I2C_STARTING(void)
+void i2c_start(void)
 {
 	SDA_OUT;
 	SCL_OUT;
-	SDA_1;
-	SCL_1;
+	printf("start_P2DIR=%d\n\r", P2DIR);
+	SDA = 1;
+	SCL = 1;
 	clock_delay_usec(5);
-	SDA_0;
+	SDA = 0;
 	clock_delay_usec(5);
-	SCL_0;
+	SCL = 0;
 }
 
-/*
-* 结束信号
-*/
-void I2C_ENDING(void)
+void i2c_stop(void)
 {
 	SDA_OUT;
-	SCL_OUT;
-	SDA_0;
-	SCL_1;
+	SDA = 0;
+	SCL = 1;
 	clock_delay_usec(5);
-	SDA_1;
+	SDA = 1;
 	clock_delay_usec(5);
 }
 
-/*
-* 等待应答信号
-*/
-unsigned char I2C_WAIT_ACK(void)
+void i2c_ack(unsigned char ack)
 {
-	unsigned int time_out = 0; 
 	SDA_OUT;
-	SCL_OUT;
-	SDA_1; 
-	//clock_delay_usec(5);
+	SDA = ack;
+	SCL = 1;
+	clock_delay_usec(5);
+	SCL = 0;
+	clock_delay_usec(5);
+}
+
+unsigned char i2c_wait_ack(void)
+{
+	unsigned char ack = 0;
 	SDA_IN;
-	SCL_1;
+	printf("in_P2DIR = %d\n\r", P2DIR);
+	SCL = 1;
 	clock_delay_usec(5);
-	while(SDA) {
-		time_out++;
-		clock_delay_usec(1);
-		if (time_out > 50) {
-			printf("wait ack time out. \n\r");
-			I2C_ENDING();
-			return 1;
-		}
-	}
-	SCL_0;
-	return 0;
+	ack = SDA;
+	SCL = 0;
+	clock_delay_usec(5);
+	printf("ack = %d\r\n", ack);
+	return ack;
 }
 
-/*
-* 发出应答信号
-*/
-void I2C_ACK(void)
+void i2c_send_byte(unsigned char byte)
 {
+	unsigned char i = 0;
 	SDA_OUT;
-	SCL_OUT;
-	SCL_0;
-	SDA_0;
-	clock_delay_usec(2);
-	SCL_1;
-	clock_delay_usec(5);
-	SCL_0;
-	clock_delay_usec(5);
-}
-
-/*
-* 发出NACK信号
-*/
-void I2C_NACK(void)
-{
-	SDA_OUT;
-	SCL_OUT;
-	SCL_0;
-	SDA_1;
-	clock_delay_usec(2);
-	SCL_1;
-	clock_delay_usec(5);
-	SCL_0;
-	clock_delay_usec(5);
-}
-
-/*
-* 发送一个位
-*/
-unsigned char I2C_SEND_BYTE(unsigned char byte)
-{
-	unsigned char i;
-	
-	SDA_OUT;
-	SCL_OUT;
-	SCL_0;
-	for (i = 0; i < 8; i++) {
-		SDA = (byte & 0x80) >> 7;
-		byte <<= 1;
-		SCL_1;
-		clock_delay_usec(5);
-		SCL_0;
-		clock_delay_usec(5);
-	}
-	return I2C_WAIT_ACK();
-}
-
-/*
-* 接受一个字节
-*/
-void I2C_RECEIVE_BYTE(unsigned char *res)
-{
-	unsigned char i;
-	unsigned char recive = 0;
-	SDA_IN;
-	SCL_OUT;
 	for(i = 0; i < 8; i++) {
-		SCL_0;
+		SDA = ((byte & 0x80) >> 7);
+		printf("byte = %d\n\r", ((byte & 0x80) >> 7));
+		SCL = 1;
 		clock_delay_usec(5);
-		SCL_1;
+		SCL = 0;
 		clock_delay_usec(5);
-		recive <<= 1;
-		if(SDA) {
-			recive++;
-		}
+		byte <<= 1;
 	}
-	
-	*res = recive;
+	i2c_wait_ack();
 }
 
-/*
-* 写入指定设备 指定寄存器一个字节
-*/
-unsigned char I2C_WRITE_BYTE(unsigned char i2c_addr, unsigned char reg_addr, unsigned char data)
+void i2c_recive_byte(unsigned char *byte)
 {
-	unsigned char  res;
-	
-	I2C_STARTING();
-	
-	if((res = I2C_SEND_BYTE(i2c_addr))) {
-		return res;
+	unsigned char i = 0;
+	*byte = 0;
+	SDA_IN;
+	for(i = 0; i < 8; i++) {
+		*byte <<= 1;
+		SCL = 1;
+		clock_delay_usec(5);
+		printf("SDA = %d\n\r", SDA);
+		*byte |= SDA;
+		SCL = 0;
+		clock_delay_usec(5);
 	}
-	
-	if((res = I2C_SEND_BYTE(reg_addr))) {
-		return res;
-	}
-
-	if((res = I2C_SEND_BYTE(data))) {
-		return res;
-	}
-
-	return 0;
 }
-
 /*
-* 读取指定设备 指定寄存器的一个值。
-*/
-unsigned char I2C_READ_BYTE(unsigned char i2c_addr, unsigned char reg_addr, unsigned char *data)
+void i2c_write(unsigned char reg_addr)
 {
-	unsigned char res;
-	I2C_STARTING();
-	
-	if((res = I2C_SEND_BYTE(i2c_addr))) {
-		return res;
-	}
-
-	if((res = I2C_SEND_BYTE(reg_addr))) {
-		return res;
-	}
-
-	I2C_STARTING();
-	
-	if((res = I2C_SEND_BYTE(i2c_addr + 1))) {
-		return res;
-	}
-
-	I2C_RECEIVE_BYTE(data);
-	
-	I2C_NACK();
-	I2C_ENDING();
-	
-	return res;
+	SCL_OUT();
+	i2c_start();
+	i2c_send_byte(SLAVE_ADDR);
+	i2c_send_byte(reg_addr);
+	i2c_stop();
 }
+
+void i2c_read(unsigned char *data)
+{
+	unsigned char i = 0;
+	SCL_OUT();
+	i2c_start();
+	i2c_send_byte(SLAVE_ADDR + 1);
+	i2c_recive_byte(data);
+}
+*/

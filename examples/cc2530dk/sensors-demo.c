@@ -182,9 +182,17 @@ PROCESS_THREAD(sensors_test_process, ev, data)
 	  P0DIR &= ~(0x40);
 	  rv = sensor->value(ADC_SENSOR_TYPE_AIN6);
       if(rv != -1) {
-        PRINTF("湿度=%d\n\r", rv);
-        /* Store rv temporarily in dec so we can use it for the battery */
-        dec = rv;
+		sane = rv * 1.25 / 2047;
+        dec = sane;
+        frac = sane - dec;
+        PRINTF("电压=%d.%02u V(%d)\n\r", dec, (unsigned int)(frac*100), rv);
+        if(dec > 0) {
+			P1DIR |= 0x02;
+			P1_1 = 1;
+		} else {
+			P1DIR |= 0x02;
+			P1_1 = 0;
+		}
       }
 	  
       /*
@@ -192,7 +200,7 @@ PROCESS_THREAD(sensors_test_process, ev, data)
        *   rv = sensor->value(ADC_SENSOR_TYPE_BATTERY);
        */
 
-      leds_off(LEDS_RED);
+      //leds_off(LEDS_RED);
     }
     etimer_reset(&et);
   }

@@ -78,6 +78,9 @@ value(int type)
 	case ADC_SENSOR_TYPE_AIN1:
 		command |= ADCCON3_ECH0;
 	break;
+	case ADC_SENSOR_TYPE_AIN4:
+		command |= ADCCON3_ECH2;
+	break;
 	case ADC_SENSOR_TYPE_AIN6:
 		command |= ADCCON3_ECH2 | ADCCON3_ECH1;
 	break;

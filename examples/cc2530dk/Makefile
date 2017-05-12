@@ -1,4 +1,4 @@
-CONTIKI_PROJECT = hello-world blink-hello timer-test sensors-demo mpu6050connet ds18b20connet dht11connet
+CONTIKI_PROJECT = hello-world blink-hello timer-test sensors-demo  ds18b20connet dht11connet bh1750fviconnet  project
 
 all: $(CONTIKI_PROJECT) 
 

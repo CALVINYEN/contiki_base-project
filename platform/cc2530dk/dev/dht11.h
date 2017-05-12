@@ -8,10 +8,10 @@
 
 
 
-#define DATA            P1_1                //数据IO口
+#define DATA            P0_7                //数据IO口
 
-#define SET_OUT()   P1DIR |=  0x02  //设置IO方向,out设置IO方向为输出
-#define SET_IN()    P1DIR &= ~0x02  //设置IO方向,in设备IO方向为输入
+#define SET_OUT()   P0DIR |=  0x80  //设置IO方向,out设置IO方向为输出
+#define SET_IN()    P0DIR &= ~0x80  //设置IO方向,in设备IO方向为输入
 
 extern unsigned char dht11_read(unsigned char *temp_integer, unsigned char *humidity_integer, unsigned char *temp_decimal, unsigned char *humidity_decimal);
 
