@@ -39,11 +39,11 @@
 #include "sfr-bits.h"
 #include "cc253x.h"
 #include "adc-sensor.h"
+#include <stdio.h>
 
 #if ADC_SENSOR_ON
 /*---------------------------------------------------------------------------*/
-static int
-value(int type)
+static int value(int type)
 {
   uint16_t reading;
   /*
@@ -53,9 +53,15 @@ value(int type)
    */
   uint8_t command;
 
+#if AVDD5_PIN
+	/* AVDD5 pin ref, max decimation rate  */
+  command = ADCCON3_EDIV1 | ADCCON3_EDIV0 |ADCCON3_EREF1;
+ // printf("command = %d\n", command);
+#else
   /* 1.25V ref, max decimation rate */
   command = ADCCON3_EDIV1 | ADCCON3_EDIV0;
-
+#endif
+  
   /* Clear the Interrupt Flag */
   ADCIF = 0;
 
@@ -72,18 +78,18 @@ value(int type)
     command |= ADCCON3_ECH3 | ADCCON3_ECH2 | ADCCON3_ECH1 | ADCCON3_ECH0;
     break;
 #endif
-	case ADC_SENSOR_TYPE_AIN0:
-		command |= 0x00;
-	break;
-	case ADC_SENSOR_TYPE_AIN1:
-		command |= ADCCON3_ECH0;
-	break;
 	case ADC_SENSOR_TYPE_AIN4:
-		command |= ADCCON3_ECH2;
+	command |= ADCCON3_ECH2;
 	break;
+	
+	case ADC_SENSOR_TYPE_AIN5:
+	command |= ADCCON3_ECH2 | ADCCON3_ECH0;
+	break;
+	
 	case ADC_SENSOR_TYPE_AIN6:
-		command |= ADCCON3_ECH2 | ADCCON3_ECH1;
+	command |= ADCCON3_ECH2 | ADCCON3_ECH1;
 	break;
+	
   default:
     /* If the sensor is not present or disabled in conf, return -1 */
     return -1;

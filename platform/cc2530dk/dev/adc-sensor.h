@@ -50,6 +50,9 @@
 /* ADC Sensor Types */
 #define ADC_SENSOR "ADC"
 
+/*ref type*/
+#define AVDD5_PIN 1
+
 #define ADC_SENSOR_TYPE_TEMP    14
 #define ADC_SENSOR_TYPE_VDD     13
 
