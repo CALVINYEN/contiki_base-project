@@ -22,14 +22,7 @@ static int rv;
 static float sane = 0;
 static int dec;
 static float frac;
-static unsigned char weather_type;
-
-enum weather_type_list{
-	NIGHT = 0,
-	FINE,
-	CLOUDY,
-	RAINY,
-};
+static char weather_type[10] ;
 
 static unsigned char irrigate_flag = 0;
 static struct sensors_sensor *sensor;
@@ -83,66 +76,59 @@ PROCESS_THREAD(project_process, ev, data)
 	PROCESS_BEGIN();
 	
 	while(1) {
-		//udp_client_process();
-		printf("process_1\n\r");
+
 		/*温湿度采集*/
 		dht11_read(&temp_integer, &humidity_integer, &temp_decimal, &humidity_decimal);
-		//printf("temp_integer = %d, humidity_integer = %d, temp_decimal = %d, humidity_decimal = %d\n\r",temp_integer, humidity_integer, temp_decimal, humidity_decimal);
-		
+
 		/*光照采集*/
 		sensor = sensors_find(ADC_SENSOR);
 		P0DIR &= ~(0x10); //端口P0_4
 		rv = sensor->value(ADC_SENSOR_TYPE_AIN4);
+		/* 判断光照情况 */
 		if(rv != -1) {
 			sane = rv * 3.3 / 2047;
 			dec = sane;
 			frac = sane - dec;
 			if(dec > 0) {
-				weather_type = NIGHT;//夜晚
+				strcpy(weather_type, "Night");//夜晚
 			}else if((unsigned int)(frac*100) < 56) {
-				weather_type = FINE;//晴天
+				strcpy(weather_type, "Fine");//晴天
 			}else if((unsigned int)(frac*100) < 82) {
-				weather_type = CLOUDY;//阴天
+				strcpy(weather_type, "Cloudy");//阴天
 			}else {
-				weather_type = RAINY;//阴雨
+				strcpy(weather_type, "Rainy");//阴雨
 			}
-			printf("weather_type= %d, 光照=%d.%02u V(%d)\n\r", weather_type, dec, (unsigned int)(frac*100), rv);
 		}
-		
+
 		/*土壤湿度采集*/
 		P0DIR &= ~(0x40);// 端口P0_6
 		rv = sensor->value(ADC_SENSOR_TYPE_AIN6);
 		if(rv != -1) {
 			sane = rv * 3.3 / 2047;
-			dec = sane;
-			frac = sane - dec;
-			//printf("土壤湿度=%d.%02u V(%d)\n\r", dec, (unsigned int)(frac*100), rv);
 		}
-		
-		if(dec > 0 && irrigate_flag == 0) {
-			//tcpip_handler();
+
+		/*判断是否需要灌溉*/
+		P0DIR &= ~0x20; //端口P0_5
+		if(P0_5 == 1 && irrigate_flag == 0) {
 			irrigate_flag = 1;
 			/*继电器控制，高电平触发，端口P1_7*/
 			P1DIR |= 0x80;
 			P1_7 = 1;
-			printf("AT+CMGF=0\r");
+			printf("AT+CMGF=1\r");
 			clock_delay_usec(10000);
 			clock_delay_usec(10000);
 			clock_delay_usec(10000);
 			clock_delay_usec(10000);
 			clock_delay_usec(10000);
 			clock_delay_usec(10000);
-			//printf("AT+CSCS=\"GSM\"\r");
+			printf("AT+CSCS=\"GSM\"\r");
 			clock_delay_usec(10000);
 			clock_delay_usec(10000);
 			clock_delay_usec(10000);
 			clock_delay_usec(10000);
 			clock_delay_usec(10000);
 			clock_delay_usec(10000);
-			//printf("AT+CMGS=\"615217\"\r");
-			printf("AT+CMGW=53\r");
-			clock_delay_usec(10000);
-			clock_delay_usec(10000);
+			printf("AT+CMGS=\"615217\"\r");
 			clock_delay_usec(10000);
 			clock_delay_usec(10000);
 			clock_delay_usec(10000);
@@ -151,11 +137,8 @@ PROCESS_THREAD(project_process, ev, data)
 			clock_delay_usec(10000);
 			clock_delay_usec(10000);
 			clock_delay_usec(10000);
-			clock_delay_usec(10000);
-			clock_delay_usec(10000);
-			printf("0891683108200105F0110006911625710008AA2A6E295EA6FF1A00320036FF0C00206E7F5EA6FF1A00200035003230026B6357288FDB884C704C6E893002%c", 0x1A);
-			//printf("temperatura: %d, Humidade: %d %c", temp_integer, humidity_integer, 0x1A);
-		}else if(dec < 1) {
+			printf("Temperatura: %d℃, Humidity: %d, Weather: %s%c", temp_integer, humidity_integer, weather_type, 0x1A);
+		}else if(P0_5 == 0) {
 			irrigate_flag = 0;
 			P1DIR |= 0x80;
 			P1_7 = 0;

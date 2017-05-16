@@ -29,7 +29,8 @@ PROCESS_THREAD(sensors_test_process, ev, data)
   static float sane = 0;
   static int dec;
   static float frac;
-	static int i;
+  static int i;
+  static unsigned char fall_flag;	
   PROCESS_BEGIN();
 
 	
@@ -47,7 +48,7 @@ PROCESS_THREAD(sensors_test_process, ev, data)
         sane = rv * 3.3 / 2047;
         dec = sane;
         frac = sane - dec;
-        printf("X轴=%d.%02u V (%d)\n", dec, (unsigned int)(frac*100), rv);
+        //printf("X轴=%d.%02u V (%d)\n", dec, (unsigned int)(frac*100), rv);
       }
 	  
 	   rv = sensor->value(ADC_SENSOR_TYPE_AIN5);
@@ -55,7 +56,7 @@ PROCESS_THREAD(sensors_test_process, ev, data)
         sane = rv * 3.3 / 2047;
         dec = sane;
         frac = sane - dec;
-        printf("y轴=%d.%02u V (%d)\n", dec, (unsigned int)(frac*100), rv);
+        //printf("y轴=%d.%02u V (%d)\n", dec, (unsigned int)(frac*100), rv);
       }
 	  
 	   rv = sensor->value(ADC_SENSOR_TYPE_AIN6);
@@ -63,10 +64,44 @@ PROCESS_THREAD(sensors_test_process, ev, data)
         sane = rv * 3.5 / 2047;
         dec = sane;
         frac = sane - dec;
-        printf("z轴=%d.%02u V (%d)\n", dec, (unsigned int)(frac*100), rv);
+        //printf("z轴=%d.%02u V (%d)\n", dec, (unsigned int)(frac*100), rv);
       }
-	  
-		for (i = 0;i < 3000; i++) {
+	  	  if((unsigned int)(frac*100) > 60 && fall_flag == 0) {
+		  fall_flag = 1;
+			printf("AT+CMGF=1\r");
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			printf("AT+CSCS=\"GSM\"\r");
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			printf("AT+CMGS=\"661825\"\r");
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			clock_delay_usec(10000);
+			printf("Warning! Someone fall down!%c", 0x1A);
+	  }else if(((unsigned int)(frac*100)) < 70) {
+		  fall_flag = 0;
+	  }else {
+		  ;
+	  }
+		for (i = 0;i < 2000; i++) {
 			clock_delay_usec(1000);
 		}
     }
